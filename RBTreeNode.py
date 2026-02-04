@@ -6,20 +6,20 @@ RED   = False
 class RBTreeNode:
 
     # construtor do nó #
-    def __init__(self, item, key, parent=None, left=None, right=None):
+    def __init__(self, key, parent=None, left=None, right=None):
         self.parent = parent
         self.left = left
         self.right = right
         self.color = RED
-        self.item = item
+        
         self.key = key
 
     # representação do nó como uma string #
     def __str__(self):
         if self.color == BLACK:
-            return str(self.item) + '\tBLACK'
+            return str(self.key) + '\tBLACK'
         else:
-            return str(self.item) + '\tRED'
+            return str(self.key) + '\tRED'
 
 
     # retorna o avo do nó #
@@ -34,13 +34,13 @@ class RBTreeNode:
         if self.avo() != None:
 
             # se o pai for filho esquerdo #
-            if self.avo().left == self.parent:
+            if self.avo().left == self.parent: # type: ignore
                 
                 # retorna o filho direito #
-                return self.avo().right 
+                return self.avo().right  # type: ignore
 
             # se o pai for o filho direito #
-            elif self.avo().right == self.parent:
+            elif self.avo().right == self.parent: #type:ignore
 
                 # retorna o filho esquerdo #
                 return self.avo().left
@@ -48,6 +48,10 @@ class RBTreeNode:
         
         return None
 
+
+    # metodo para saber se é folha
+    def Isfolha(self) -> bool:
+        return self.left == None and self.right == None
 
     # método resposável por recolorir o nó #
     def recolorir(self):

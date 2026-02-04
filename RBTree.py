@@ -13,53 +13,70 @@ class RBTree:
         return self.printTree(self.root)
 
     def printTree(self, node):
-        str = ''
+        if node is None:
+            return ''
+        
+        result = ''
         if node.left is not None:
-            str += self.printTree(node.left)
+            result += self.printTree(node.left)
 
-        str += node.__str__() + '\n'
+        result += node.__str__() + '\n'
 
         if node.right is not None:
-            str += self.printTree(node.right)
+            result += self.printTree(node.right)
         
-        return str
+        return result
         
         
-    def insert(self, item, key, node=None):
-        if node is None:
-            node = self.root
+    def insert(self, key, node:RBTreeNode):
+        
             
         # se a arvore não estiver vazia #
         if node is not None:
-            
             # se for folha #
-            if node.left is None and node.right is None:
+            if node.Isfolha():
                 
                 # cria um novo nó #
-                newNode = RBTreeNode(item, key, parent=node)
+                newNode = RBTreeNode( key, parent=node)
 
                 # define se é filho direito ou esquerdo #
-                if key >= node.key:
+                if key > node.key:
                     node.right = newNode
-                else:
+                elif key < node.key:
                     node.left = newNode
                 
-                self.corrigir(newNode)
+                # self.corrigir(newNode)
                 return True
 
             # se tiver filho direito #
-            if node.right != None:
-                
-                # compara o valor das chaves #
-                if key >= node.key:
-                    self.insert(item, key, node.right)
 
-            # se tiver filho esquerdo #
-            if node.left != None:
+            if key > node.key:
+                if node.right == None:
+                    newNode = RBTreeNode(key, node)
+                    node.right = newNode
+                    return True
+                else:
+                    return self.insert(key, node.right)
+            if key < node.key:
+                if node.left == None:
+                    newNode = RBTreeNode(key, node)
+                    node.left = newNode
+                    return True
+                else:
+                    return self.insert(key, node.left)
+            # if node.right != None:
                 
-                # compara o valor das chaves #
-                if key < node.key:
-                    self.insert(item, key, node.left)
+            #     # compara o valor das chaves #
+            #     if key > node.key:
+            #         return self.insert( key, node.right)
+                
+
+            # # se tiver filho esquerdo #
+            # if node.left != None:
+                
+            #     # compara o valor das chaves #
+            #     if key < node.key:
+            #         return self.insert( key, node.left)
             
             
                 
@@ -68,11 +85,15 @@ class RBTree:
         # se a arvore estiver vazia #
         else:
                 # cria um novo nó #
-                newNode = RBTreeNode(item, key, parent=None)
-
-                self.root = newNode
-                self.corrigir(newNode)
+                self.criarNo(key)
+                # self.corrigir(newNode)
                 return True
+        
+    
+    def criarNo(self, key, parent=None):
+        newNode = RBTreeNode(key, parent)
+        self.root = newNode
+        return True
         
 
     def corrigir(self, node):

@@ -1,88 +1,97 @@
-
-
+# RBTreeNode.py
 BLACK = True
-RED   = False
+RED = False
 
 class RBTreeNode:
-
-    # construtor do nó #
+    # construtor do nó
     def __init__(self, key, parent=None, left=None, right=None):
+        self.key = key
         self.parent = parent
         self.left = left
         self.right = right
         self.color = RED
-        
-        self.key = key
 
-    # representação do nó como uma string #
+    # representação do nó como string
     def __str__(self):
-        if self.color == BLACK:
-            return str(self.key) + '\tBLACK'
-        else:
-            return str(self.key) + '\tRED'
+        cor = "BLACK" if self.color == BLACK else "RED"
+        return f"{self.key}\t{cor}"
 
-
-    # retorna o avo do nó #
+    # retorna o avô do nó
     def avo(self):
-        if self.parent != None:
-            return self.parent.parent
-        return None
+        return self.parent.parent if self.parent is not None else None
 
-    # retorna o tio do nó #
+    # retorna o tio do nó
     def tio(self):
-        # se o avo existir #
-        if self.avo() != None:
+        avo = self.avo()
+        if avo is None:
+            return None
 
-            # se o pai for filho esquerdo #
-            if self.avo().left == self.parent: # type: ignore
-                
-                # retorna o filho direito #
-                return self.avo().right  # type: ignore
-
-            # se o pai for o filho direito #
-            elif self.avo().right == self.parent: #type:ignore
-
-                # retorna o filho esquerdo #
-                return self.avo().left
-        
-        
+        # se o pai for filho esquerdo, tio é o filho direito e vice-versa
+        if avo.left is self.parent:
+            return avo.right
+        if avo.right is self.parent:
+            return avo.left
         return None
 
+    def paiVermelho(self):
+        # corrigido: era "self.parentcolor" no seu código
+        return self.parent is not None and self.parent.color == RED
 
-    # metodo para saber se é folha
+    # método para saber se é folha
     def Isfolha(self) -> bool:
-        return self.left == None and self.right == None
+        return self.left is None and self.right is None
 
-    # método resposável por recolorir o nó #
+    # método responsável por recolorir o nó
     def recolorir(self):
-        if self.color == RED:
-            self.color = BLACK
+        self.color = BLACK if self.color == RED else RED
+
+    # helper: troca 'self' por 'novo' na ligação com o pai (ou vira raiz)
+    def _substituirNoPai(self, tree, novo):
+        if self.parent is None:
+            tree.root = novo
         else:
-            self.color = RED
+            if self.parent.left is self:
+                self.parent.left = novo
+            else:
+                self.parent.right = novo
 
-    def rotacaoDireita(self):
-        self.parent.right = self.left
-        
-        if self.left is not None:
-            self.left.parent = self.parent
-        
-        self.left = self.parent
-        self.parent = self.left.parent
-        self.left.parent = self
-        
-        return self
+        if novo is not None:
+            novo.parent = self.parent
 
-    def rotacaoEsquerda(self):
-        self.parent.left = self.right
-        
-        if self.right is not None:
-            self.right.parent = self.parent
-        
-        self.right = self.parent
-        if self.right is not None:
-            self.parent = self.right.parent
-        else:
-            self.parent = None
-        self.right.parent = self
+    def rotacaoEsquerda(self, tree):
+        pivô = self.right
+        if pivô is None:
+            return self
 
-        return self
+        # 1) subárvore do meio sobe para a direita do self
+        self.right = pivô.left
+        if pivô.left is not None:
+            pivô.left.parent = self
+
+        # 2) pivô ocupa o lugar do self (no pai ou na raiz)
+        self._substituirNoPai(tree, pivô)
+
+        # 3) self desce para a esquerda do pivô
+        pivô.left = self
+        self.parent = pivô
+
+        return pivô
+
+    def rotacaoDireita(self, tree):
+        pivô = self.left
+        if pivô is None:
+            return self
+
+        # 1) subárvore do meio sobe para a esquerda do self
+        self.left = pivô.right
+        if pivô.right is not None:
+            pivô.right.parent = self
+
+        # 2) pivô ocupa o lugar do self (no pai ou na raiz)
+        self._substituirNoPai(tree, pivô)
+
+        # 3) self desce para a direita do pivô
+        pivô.right = self
+        self.parent = pivô
+
+        return pivô

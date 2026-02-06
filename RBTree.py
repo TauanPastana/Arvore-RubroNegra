@@ -10,22 +10,60 @@ class RBTree:
 
 
     def __str__(self):
-        return self.printTree(self.root)
+        # Mostra a estrutura (mais útil para depurar)
+        return self.pretty()
 
-    def printTree(self, node):
+    # Mantém a sua impressão "em ordem" (in-order), só renomeei
+    def inorder(self, node=None):
+        if node is None:
+            node = self.root
+        return self._inorder(node)
+
+    def _inorder(self, node):
         if node is None:
             return ''
-        
         result = ''
         if node.left is not None:
-            result += self.printTree(node.left)
-
+            result += self._inorder(node.left)
         result += node.__str__() + '\n'
-
         if node.right is not None:
-            result += self.printTree(node.right)
-        
+            result += self._inorder(node.right)
         return result
+
+    # NOVO: imprime a árvore com estrutura
+    def pretty(self, node=None):
+        if node is None:
+            node = self.root
+        if node is None:
+            return '<árvore vazia>\n'
+        return self._pretty(node, prefix='', is_left=None)
+
+    def _pretty(self, node, prefix='', is_left=None):
+        if node is None:
+            return ''
+
+        # Conector do nó atual
+        if is_left is None:
+            connector = ''          # raiz
+        else:
+            connector = '├── ' if is_left else '└── '
+
+        # Rótulo do nó (valor + cor)
+        color = 'B' if node.color else 'R'  # no seu código: BLACK=True, RED=False [file:2]
+        line = f"{prefix}{connector}{node.key}({color})\n"
+
+        # Prefixo para os filhos (mantém as barras verticais alinhadas)
+        child_prefix = prefix
+        if is_left is None:
+            child_prefix += ''
+        else:
+            child_prefix += '│   ' if is_left else '    '
+
+        # Para ficar mais “natural” ao ler de cima pra baixo:
+        # imprime primeiro o filho esquerdo (se existir) e depois o direito
+        left_part = self._pretty(node.left,  child_prefix, True)  if node.left  is not None else ''
+        right_part = self._pretty(node.right, child_prefix, False) if node.right is not None else ''
+        return line + left_part + right_part
         
         
     def insert(self, key, node:RBTreeNode):
@@ -45,7 +83,7 @@ class RBTree:
                 elif key < node.key:
                     node.left = newNode
                 
-                # self.corrigir(newNode)
+                self.corrigir(newNode)
                 return True
 
             # se tiver filho direito #
@@ -54,6 +92,7 @@ class RBTree:
                 if node.right == None:
                     newNode = RBTreeNode(key, node)
                     node.right = newNode
+                    self.corrigir(newNode)  
                     return True
                 else:
                     return self.insert(key, node.right)
@@ -61,22 +100,11 @@ class RBTree:
                 if node.left == None:
                     newNode = RBTreeNode(key, node)
                     node.left = newNode
+                    self.corrigir(newNode)  
                     return True
                 else:
                     return self.insert(key, node.left)
-            # if node.right != None:
-                
-            #     # compara o valor das chaves #
-            #     if key > node.key:
-            #         return self.insert( key, node.right)
-                
-
-            # # se tiver filho esquerdo #
-            # if node.left != None:
-                
-            #     # compara o valor das chaves #
-            #     if key < node.key:
-            #         return self.insert( key, node.left)
+         
             
             
                 
@@ -86,17 +114,26 @@ class RBTree:
         else:
                 # cria um novo nó #
                 self.criarNo(key)
-                # self.corrigir(newNode)
                 return True
         
     
     def criarNo(self, key, parent=None):
         newNode = RBTreeNode(key, parent)
         self.root = newNode
-        return True
+        self.corrigir(newNode)
         
+        return True
+    
+
+    def nodesisRED(self, node):
+        return node.parent.color == RED 
 
     def corrigir(self, node):
+
+
+        
+            
+        
         # caso 1 #
         if node.parent is None:
             node.color = BLACK
@@ -106,6 +143,9 @@ class RBTree:
             avo = node.avo()
             tio = node.tio()
             pai = node.parent
+
+            if pai.color == BLACK:
+                return True
 
             if tio != None and tio.color == RED:
                 pai.color = BLACK
@@ -117,94 +157,60 @@ class RBTree:
             # caso 3 #
             else:
 
-                # subcaso 1 #
-                
-                # Caso o nó inserido seja filho esquerdo e o pai do nó também seja filho esquerdo
-                
-                if avo is not None:
+                # subcaso 1 (LL): pai é filho esquerdo do avô e node é filho esquerdo do pai
                     if avo.left == pai and node == pai.left:
-                        
-                        # se a cor do avô for preto e do pai for vermelho
                         if avo.color == BLACK and pai.color == RED:
-                            
-                            # recolore o pai e o avô
                             pai.recolorir()
                             avo.recolorir()
 
-                            # faz-se uma rotação a direita
-                            if avo.parent is not None:
-                                if avo.parent.left == avo:
-                                    avo.parent.left = pai.rotacaoDireita()
-                                else:
-                                    avo.parent.right = pai.rotacaoDireita()
-                            else:
-                                self.root = pai.rotacaoEsquerda()
-                            
+                            novoTopo = avo.rotacaoDireita(self)
+                            return True
+                           
 
-                    # subcaso 2 #
-
-                    # Caso o nó inserido seja filho direito e o pai do nó também seja filho direito
+                    # subcaso 2 (RR): pai é filho direito do avô e node é filho direito do pai
                     elif avo.right == pai and node == pai.right:
-                        
-                        # se a cor do avô for preto e do pai for vermelho
                         if avo.color == BLACK and pai.color == RED:
-                            
-                            # recolore o pai e o avô
                             pai.recolorir()
                             avo.recolorir()
 
-                            # faz-se uma rotação a esquerda
-                            if avo.parent is not None:
-                                if avo.parent.left == avo:
-                                    avo.parent.left = pai.rotacaoEsquerda()
-                                else:
-                                    avo.parent.right = pai.rotacaoEsquerda()
-                            else:
-                                self.root = pai.rotacaoEsquerda()
+                            novoTopo = avo.rotacaoEsquerda(self)
+                            return True
+                            
 
-                    # subcaso 3 #
-
-                    # Caso o nó inserido seja filho esquedro e o pai seja filho direito   
+                    # subcaso 3 (RL): pai é filho direito do avô e node é filho esquerdo do pai
                     elif avo.right == pai and node == pai.left:
-
-                        # se a cor do avô for preto e do pai for vermelho
                         if avo.color == BLACK and pai.color == RED:
-                            
-                            # recolore o pai e o avô
-                            # pai.recolorir()
-                            # avo.recolorir()
+                            # 1) rotaciona à direita no pai
+                            pai.rotacaoDireita(self)
 
-                            # realiza-se uma rotação simples a direita
-                            avo.right = node.rotacaoDireita()
+                            # 2) rotaciona à esquerda no avô (retorna o novo topo)
+                            novoTopo = avo.rotacaoEsquerda(self)
 
-                            if avo.parent is not None:
-                                if avo.parent.left == avo:
-                                    avo.parent.left = pai.rotacaoEsquerda()
-                                else:
-                                    avo.parent.right = pai.rotacaoEsquerda()
-                            else:
-                                self.root = pai.rotacaoEsquerda()
+                            # 3) recoloração correta pós-rotação dupla
+                            novoTopo.color = BLACK
+                            if novoTopo.left is not None:
+                                novoTopo.left.color = RED
+                            if novoTopo.right is not None:
+                                novoTopo.right.color = RED
 
-                    # subcaso 4 #
+                            return True
 
-                    # Caso o nó inserido seja filho esquedro e o pai seja filho direito   
+                    # subcaso 4 (LR): pai é filho esquerdo do avô e node é filho direito do pai
                     elif avo.left == pai and node == pai.right:
-
-                        # se a cor do avô for preto e do pai for vermelho
                         if avo.color == BLACK and pai.color == RED:
-                            
-                            # recolore o pai e o avô
-                            # pai.recolorir()
-                            # avo.recolorir()
+                            # 1) rotaciona à esquerda no pai
+                            pai.rotacaoEsquerda(self)
 
-                            # realiza-se uma rotação simples a esqueda
-                            avo.left = node.rotacaoEsquerda()
+                            # 2) rotaciona à direita no avô
+                            novoTopo = avo.rotacaoDireita(self)
 
-                            if avo.parent is not None:
-                                if avo.parent.left == avo:
-                                    avo.parent.left = pai.rotacaoDireita()
-                                else:
-                                    avo.parent.right = pai.rotacaoDireita()
-                            else:
-                                self.root = pai.rotacaoDireita()
-                self.corrigir(pai)
+                            # 3) recoloração correta pós-rotação dupla
+                            novoTopo.color = BLACK
+                            if novoTopo.left is not None:
+                                novoTopo.left.color = RED
+                            if novoTopo.right is not None:
+                                novoTopo.right.color = RED
+
+                            return True
+
+                    # self.corrigir(pai)
